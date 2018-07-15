@@ -3,8 +3,8 @@
 #![allow(unused_mut)]
 extern crate image;
 
-use image::Rgba;
 use image::GenericImage;
+use image::Rgba;
 
 type C = Rgba<u8>;
 type P = (u32, u32);
@@ -43,10 +43,10 @@ fn get_pixel(img: &Img, x: u32, y: u32) -> C {
     img.get_pixel(x, y)
 }
 
-fn check_if_edge(img: &Img, ps: [P; 15]) -> Option<P> {
+fn check_if_edge<Iter: Iterator<Item = P>>(img: &Img, ps: Iter) -> Option<P> {
     // vector should start from the center of the circle to the outside
     let mut stage = 0;
-    for p in ps.iter() {
+    for p in ps {
         let px = get_pixel(img, p.0, p.1);
         let body = is_circle_body(px);
         if stage == 0 {
@@ -101,32 +101,14 @@ fn find_circle(img: &Img, p: P) -> Option<CircleFound> {
 
     let y_center = (y_up + y_down) / 2;
     let radius = y_center - y_up;
-    let y_left_res = check_if_edge(img, [
-        (x_center - radius + 7, y_center),
-        (x_center - radius + 6, y_center),
-        (x_center - radius + 5, y_center),
-        (x_center - radius + 4, y_center),
-        (x_center - radius + 3, y_center),
-        (x_center - radius + 2, y_center),
-        (x_center - radius + 1, y_center),
-        (x_center - radius + 0, y_center),
-        (x_center - radius - 1, y_center),
-        (x_center - radius - 2, y_center),
-        (x_center - radius - 3, y_center),
-        (x_center - radius - 4, y_center),
-        (x_center - radius - 5, y_center),
-        (x_center - radius - 6, y_center),
-        (x_center - radius - 7, y_center)
-    ]);
-    match y_left_res {
-        None => None,
-        Some((x_left, _)) => Some(CircleFound {
-            l: (x_left, y_center),
-            r: (x_left + 2 * radius, y_center),
-            u: (x_center, y_up),
-            d: (x_center, y_down)
-        })
-    }
+    let yyy = (-7..8).rev();
+    let yy = yyy.map(|e| (x_center - radius + (e + 7) as u32 - 7, y_center));
+    check_if_edge(img, yy).map(|(x_left, _)| CircleFound {
+        l: (x_left, y_center),
+        r: (x_left + 2 * radius, y_center),
+        u: (x_center, y_up),
+        d: (x_center, y_down)
+    })
 }
 
 fn main() {
